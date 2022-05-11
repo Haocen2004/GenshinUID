@@ -620,21 +620,21 @@ async def open_switch_func(
                 else:
                     return
             except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
                 logger.exception('发送设置成功信息失败')
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
-                await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
                 logger.exception('设置简洁签到报告失败')
+                await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
     except ActionFailed as e:
-        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
         logger.exception('发送开启自动签到信息失败')
+        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
     except Exception as e:
         if isinstance(e, FinishedException):
             raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
         logger.exception('开启自动签到失败')
+        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
 
 
 # 关闭 自动签到 和 推送树脂提醒 功能
@@ -708,21 +708,21 @@ async def close_switch_func(
                 else:
                     return
             except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
                 logger.exception('发送设置成功信息失败')
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
-                await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
                 logger.exception('设置简洁签到报告失败')
+                await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
     except ActionFailed as e:
-        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
         logger.exception('发送开启自动签到信息失败')
+        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
     except Exception as e:
         if isinstance(e, FinishedException):
             raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
         logger.exception('关闭自动签到失败')
+        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
 
 
 # 图片版信息
@@ -812,8 +812,8 @@ async def send_mihoyo_coin(event: MessageEvent,
         try:
             await matcher.finish(im, at_sender=True)
         except ActionFailed as e:
-            await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             logger.exception('发送签到信息失败')
+            await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
 
 
 # 群聊内 校验Cookies 是否正常的功能，不正常自动删掉
@@ -859,13 +859,13 @@ async def send_daily_data(event: MessageEvent,
         im = '没有找到绑定信息。'
         await matcher.finish(im, at_sender=True)
     except ActionFailed as e:
-        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
         logger.exception('发送当前状态信息失败')
+        await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
     except Exception as e:
         if isinstance(e, FinishedException):
             raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
         logger.exception('查询当前状态错误')
+        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
 
 
 async def get_user_info(
@@ -917,17 +917,17 @@ async def get_user_info(
                     else:
                         await matcher.finish(im, at_sender=True)
             except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
                 logger.exception(f'发送{module_name}深渊信息失败')
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
                 logger.exception(f'{module_name}深渊数据获取失败（Cookie失效/不公开信息）')
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
+                logger.exception(f'{module_name}深渊数据获取失败（数据状态问题）')
                 await matcher.finish(
                     '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception(f'{module_name}深渊数据获取失败（数据状态问题）')
         elif m == '上期深渊':
             try:
                 if len(re.findall(r'\d+', message)) == 2:
@@ -948,17 +948,17 @@ async def get_user_info(
                     else:
                         await matcher.finish(im, at_sender=True)
             except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
                 logger.exception(f'发送{module_name}上期深渊信息失败')
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
                 logger.exception(f'{module_name}上期深渊数据获取失败（Cookie失效/不公开信息）')
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
+                logger.exception(f'{module_name}上期深渊数据获取失败（数据状态问题）')
                 await matcher.finish(
                     '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception(f'{module_name}上期深渊数据获取失败（数据状态问题）')
         else:
             try:
                 im = await draw_pic(uid, nickname, image, mode)
@@ -968,22 +968,22 @@ async def get_user_info(
                 else:
                     await matcher.finish(im, at_sender=True)
             except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
                 logger.exception(f'发送{module_name}信息失败')
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
             except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
                 logger.exception(f'{module_name}数据获取失败（Cookie失效/不公开信息）')
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
+                logger.exception(f'{module_name}数据获取失败（数据状态问题）')
                 await matcher.finish(
                     '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception(f'{module_name}数据获取失败（数据状态问题）')
     except Exception as e:
         if isinstance(e, FinishedException):
             raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
         logger.exception(f'{module_name}查询异常')
+        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
 
 
 # 群聊内 查询uid 的命令
@@ -1057,18 +1057,18 @@ async def get_info(
                 else:
                     await matcher.finish(im, at_sender=True)
             except ActionFailed as e:
+                logger.exception('发送uid词云信息失败')
                 await matcher.finish('机器人发送消息失败：{}'.format(
                     e.info['wording']))
-                logger.exception('发送uid词云信息失败')
             except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
                 logger.exception('词云数据获取失败（Cookie失效/不公开信息）')
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
             except Exception as e:
                 if isinstance(e, FinishedException):
                     raise
+                logger.exception('词云数据获取失败（数据状态问题）')
                 await matcher.finish(
                     '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('词云数据获取失败（数据状态问题）')
         else:
             await get_user_info(matcher, event, custom, args, "查询",
                                 nickname, uid[0], message, uid[1])
