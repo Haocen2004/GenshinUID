@@ -4,7 +4,8 @@ from typing import Union, Any
 
 from nonebot import get_bot, get_driver, on_command, on_regex, require, Bot
 from nonebot.adapters.onebot.v11 import (PRIVATE_FRIEND, GroupMessageEvent,
-                                         Message, MessageEvent, MessageSegment, PrivateMessageEvent)
+                                         Message, MessageEvent, MessageSegment,
+                                         PrivateMessageEvent)
 from nonebot.adapters.onebot.v11.exception import ActionFailed
 from nonebot.exception import FinishedException
 from nonebot.internal.params import Depends
@@ -358,7 +359,8 @@ async def send_bluekun_pic(matcher: Matcher, args: Message = CommandArg()):
 
 @get_guide_pic.handle()
 @handle_exception('建议')
-async def send_guide_pic(matcher: Matcher, args: Tuple[Any, ...] = RegexGroup()):
+async def send_guide_pic(matcher: Matcher,
+                         args: Tuple[Any, ...] = RegexGroup()):
     message = args[0].strip().replace(' ', '')
     with open(os.path.join(INDEX_PATH, 'char_alias.json'),
               'r',
@@ -379,14 +381,16 @@ async def send_guide_pic(matcher: Matcher, args: Tuple[Any, ...] = RegexGroup())
 
 @get_char_adv.handle()
 @handle_exception('建议')
-async def send_char_adv(matcher: Matcher, args: Tuple[Any, ...] = RegexGroup()):
+async def send_char_adv(matcher: Matcher,
+                        args: Tuple[Any, ...] = RegexGroup()):
     im = await char_adv(args[0])
     await matcher.finish(im)
 
 
 @get_weapon_adv.handle()
 @handle_exception('建议')
-async def send_weapon_adv(matcher: Matcher, args: Tuple[Any, ...] = RegexGroup()):
+async def send_weapon_adv(matcher: Matcher,
+                          args: Tuple[Any, ...] = RegexGroup()):
     im = await weapon_adv(args[0])
     await matcher.finish(im)
 
@@ -864,6 +868,124 @@ async def send_daily_data(event: MessageEvent,
         logger.exception('查询当前状态错误')
 
 
+async def get_user_info(
+        matcher: Matcher,
+        event: MessageEvent,
+        image: ImageAndAt,
+        args: Message,
+        module_name: str,
+        nickname: Optional[str] = None,
+        uid: Optional[str] = None,
+        message: Optional[str] = None,
+        mode: Optional[int] = 2
+):
+    """
+    通用查询+发送模块
+
+    参数：
+        `matcher`：事件响应器对象
+        `event`：消息对象
+        `image`：图片和At对象
+        `args`：命令参数
+        `module_name`：调用此函数的模块名
+        `mode=2`：查询模式
+    """
+    try:
+        message = message if message else args.extract_plain_text() \
+            .strip().replace(' ', '')
+        image = image.get_first_image()
+        uid = uid if uid else re.findall(r'\d+', message)[0]
+        m = ''.join(re.findall('[\u4e00-\u9fa5]', message))
+        nickname = nickname if nickname else event.sender.nickname
+        if m == '深渊':
+            try:
+                if len(re.findall(r'\d+', message)) == 2:
+                    floor_num = re.findall(r'\d+', message)[1]
+                    im = await draw_abyss_pic(uid, nickname,
+                                              floor_num, image, mode)
+                    if im.startswith('base64://'):
+                        await matcher.finish(MessageSegment.image(im),
+                                             at_sender=True)
+                    else:
+                        await matcher.finish(im, at_sender=True)
+                else:
+                    im = await draw_abyss0_pic(uid, nickname,
+                                               image, mode)
+                    if im.startswith('base64://'):
+                        await matcher.finish(MessageSegment.image(im),
+                                             at_sender=True)
+                    else:
+                        await matcher.finish(im, at_sender=True)
+            except ActionFailed as e:
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
+                logger.exception(f'发送{module_name}深渊信息失败')
+            except (TypeError, IndexError):
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
+                logger.exception(f'{module_name}深渊数据获取失败（Cookie失效/不公开信息）')
+            except Exception as e:
+                if isinstance(e, FinishedException):
+                    raise
+                await matcher.finish(
+                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
+                logger.exception(f'{module_name}深渊数据获取失败（数据状态问题）')
+        elif m == '上期深渊':
+            try:
+                if len(re.findall(r'\d+', message)) == 2:
+                    floor_num = re.findall(r'\d+', message)[1]
+                    im = await draw_abyss_pic(uid, event.sender.nickname,
+                                              floor_num, image, mode, '2')
+                    if im.startswith('base64://'):
+                        await matcher.finish(MessageSegment.image(im),
+                                             at_sender=True)
+                    else:
+                        await matcher.finish(im, at_sender=True)
+                else:
+                    im = await draw_abyss0_pic(uid, nickname,
+                                               image, mode, '2')
+                    if im.startswith('base64://'):
+                        await matcher.finish(MessageSegment.image(im),
+                                             at_sender=True)
+                    else:
+                        await matcher.finish(im, at_sender=True)
+            except ActionFailed as e:
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
+                logger.exception(f'发送{module_name}上期深渊信息失败')
+            except (TypeError, IndexError):
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
+                logger.exception(f'{module_name}上期深渊数据获取失败（Cookie失效/不公开信息）')
+            except Exception as e:
+                if isinstance(e, FinishedException):
+                    raise
+                await matcher.finish(
+                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
+                logger.exception(f'{module_name}上期深渊数据获取失败（数据状态问题）')
+        else:
+            try:
+                im = await draw_pic(uid, nickname, image, mode)
+                if im.startswith('base64://'):
+                    await matcher.finish(MessageSegment.image(im),
+                                         at_sender=True)
+                else:
+                    await matcher.finish(im, at_sender=True)
+            except ActionFailed as e:
+                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
+                logger.exception(f'发送{module_name}信息失败')
+            except (TypeError, IndexError):
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
+                logger.exception(f'{module_name}数据获取失败（Cookie失效/不公开信息）')
+            except Exception as e:
+                if isinstance(e, FinishedException):
+                    raise
+                await matcher.finish(
+                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
+                logger.exception(f'{module_name}数据获取失败（数据状态问题）')
+    except Exception as e:
+        if isinstance(e, FinishedException):
+            raise
+        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
+        logger.exception(f'{module_name}查询异常')
+
+
 # 群聊内 查询uid 的命令
 @get_uid_info.handle()
 async def send_uid_info(
@@ -872,98 +994,7 @@ async def send_uid_info(
         args: Message = CommandArg(),
         image: ImageAndAt = Depends()
 ):
-    try:
-        message = args.extract_plain_text().strip().replace(' ', '')
-        image = image.get_first_image()
-        uid = re.findall(r'\d+', message)[0]  # str
-        m = ''.join(re.findall('[\u4e00-\u9fa5]', message))
-        if m == '深渊':
-            try:
-                if len(re.findall(r'\d+', message)) == 2:
-                    floor_num = re.findall(r'\d+', message)[1]
-                    im = await draw_abyss_pic(uid, event.sender.nickname,
-                                              floor_num, image)
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                else:
-                    im = await draw_abyss0_pic(uid, event.sender.nickname,
-                                               image)
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送uid深渊信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('深渊数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('深渊数据获取失败（数据状态问题）')
-        elif m == '上期深渊':
-            try:
-                if len(re.findall(r'\d+', message)) == 2:
-                    floor_num = re.findall(r'\d+', message)[1]
-                    im = await draw_abyss_pic(uid, event.sender.nickname,
-                                              floor_num, image, 2, '2')
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                else:
-                    im = await draw_abyss0_pic(uid, event.sender.nickname,
-                                               image, 2, '2')
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送米游社深渊信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('上期深渊数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('上期深渊数据获取失败（数据状态问题）')
-        else:
-            try:
-                im = await draw_pic(uid, event.sender.nickname, image, 2)
-                if im.startswith('base64://'):
-                    await matcher.finish(MessageSegment.image(im),
-                                         at_sender=True)
-                else:
-                    await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送uid信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('数据获取失败（数据状态问题）')
-    except Exception as e:
-        if isinstance(e, FinishedException):
-            raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
-        logger.exception('uid查询异常')
+    await get_user_info(matcher, event, image, args, "uid")
 
 
 # 群聊内 绑定uid 的命令，会绑定至当前qq号上
@@ -990,7 +1021,6 @@ async def link_mihoyo_bbs_to_qq(event: MessageEvent,
     await matcher.finish('绑定米游社id成功！', at_sender=True)
 
 
-# 群聊内 绑定过uid/mysid的情况下，可以查询，默认优先调用米游社通行证，多出世界等级一个参数
 @search.handle()
 async def get_info(
         bot: Bot,
@@ -999,139 +1029,49 @@ async def get_info(
         args: Message = CommandArg(),
         custom: ImageAndAt = Depends()
 ):
-    try:
-        message = args.extract_plain_text().strip().replace(' ', '')
-        image = custom.get_first_image()
-        at = custom.get_first_at()
-        if at:
-            mi = await bot.call_api(
-                'get_group_member_info', **{
-                    'group_id': event.group_id,
-                    'user_id': at
-                })
-            nickname = mi['nickname']
-            uid = await select_db(at)
-            message = message.replace(str(at), '')
+    message = args.extract_plain_text().strip().replace(' ', '')
+    image = custom.get_first_image()
+    at = custom.get_first_at()
+    if at:
+        mi = await bot.call_api(
+            'get_group_member_info', **{
+                'group_id': event.group_id,
+                'user_id': at
+            })
+        nickname = mi['nickname']
+        uid = await select_db(at)
+        message = message.replace(str(at), '')
+    else:
+        nickname = event.sender.nickname
+        uid = await select_db(int(event.sender.user_id))
+    m = ''.join(re.findall('[\u4e00-\u9fa5]', message))
+    if not uid:
+        await matcher.finish('未找到绑定记录！')
+    else:
+        if m == '词云':
+            try:
+                im = await draw_word_cloud(uid[0], image, uid[1])
+                if im.startswith('base64://'):
+                    await matcher.finish(MessageSegment.image(im),
+                                         at_sender=True)
+                else:
+                    await matcher.finish(im, at_sender=True)
+            except ActionFailed as e:
+                await matcher.finish('机器人发送消息失败：{}'.format(
+                    e.info['wording']))
+                logger.exception('发送uid词云信息失败')
+            except (TypeError, IndexError):
+                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
+                logger.exception('词云数据获取失败（Cookie失效/不公开信息）')
+            except Exception as e:
+                if isinstance(e, FinishedException):
+                    raise
+                await matcher.finish(
+                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
+                logger.exception('词云数据获取失败（数据状态问题）')
         else:
-            nickname = event.sender.nickname
-            uid = await select_db(int(event.sender.user_id))
-
-        m = ''.join(re.findall('[\u4e00-\u9fa5]', message))
-        if uid:
-            if m == '深渊':
-                try:
-                    if len(re.findall(r'\d+', message)) == 1:
-                        floor_num = re.findall(r'\d+', message)[0]
-                        im = await draw_abyss_pic(uid[0], nickname, floor_num,
-                                                  image, uid[1])
-                        if im.startswith('base64://'):
-                            await matcher.finish(MessageSegment.image(im),
-                                                 at_sender=True)
-                        else:
-                            await matcher.finish(im, at_sender=True)
-                    else:
-                        im = await draw_abyss0_pic(uid[0], nickname, image,
-                                                   uid[1])
-                        if im.startswith('base64://'):
-                            await matcher.finish(MessageSegment.image(im),
-                                                 at_sender=True)
-                        else:
-                            await matcher.finish(im, at_sender=True)
-                except ActionFailed as e:
-                    await matcher.finish('机器人发送消息失败：{}'.format(
-                        e.info['wording']))
-                    logger.exception('发送uid深渊信息失败')
-                except (TypeError, IndexError):
-                    await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                    logger.exception('深渊数据获取失败（Cookie失效/不公开信息）')
-                except Exception as e:
-                    if isinstance(e, FinishedException):
-                        raise
-                    await matcher.finish('获取失败，请检查 cookie 及网络状态。')
-                    logger.exception('深渊数据获取失败（数据状态问题）')
-            elif m == '上期深渊':
-                try:
-                    if len(re.findall(r'\d+', message)) == 1:
-                        floor_num = re.findall(r'\d+', message)[0]
-                        im = await draw_abyss_pic(uid[0], nickname, floor_num,
-                                                  image, uid[1], '2')
-                        if im.startswith('base64://'):
-                            await matcher.finish(MessageSegment.image(im),
-                                                 at_sender=True)
-                        else:
-                            await matcher.finish(im, at_sender=True)
-                    else:
-                        im = await draw_abyss0_pic(uid[0], nickname, image,
-                                                   uid[1], '2')
-                        if im.startswith('base64://'):
-                            await matcher.finish(MessageSegment.image(im),
-                                                 at_sender=True)
-                        else:
-                            await matcher.finish(im, at_sender=True)
-                except ActionFailed as e:
-                    await matcher.finish('机器人发送消息失败：{}'.format(
-                        e.info['wording']))
-                    logger.exception('发送uid上期深渊信息失败')
-                except (TypeError, IndexError):
-                    await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                    logger.exception('上期深渊数据获取失败（Cookie失效/不公开信息）')
-                except Exception as e:
-                    if isinstance(e, FinishedException):
-                        raise
-                    await matcher.finish(
-                        '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                    logger.exception('上期深渊数据获取失败（数据状态问题）')
-            elif m == '词云':
-                try:
-                    im = await draw_word_cloud(uid[0], image, uid[1])
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                except ActionFailed as e:
-                    await matcher.finish('机器人发送消息失败：{}'.format(
-                        e.info['wording']))
-                    logger.exception('发送uid词云信息失败')
-                except (TypeError, IndexError):
-                    await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                    logger.exception('词云数据获取失败（Cookie失效/不公开信息）')
-                except Exception as e:
-                    if isinstance(e, FinishedException):
-                        raise
-                    await matcher.finish(
-                        '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                    logger.exception('词云数据获取失败（数据状态问题）')
-            elif m == '':
-                try:
-                    im = await draw_pic(uid[0], nickname, image, uid[1])
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                except ActionFailed as e:
-                    await matcher.finish('机器人发送消息失败：{}'.format(
-                        e.info['wording']))
-                    logger.exception('发送uid信息失败')
-                except (TypeError, IndexError):
-                    await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                    logger.exception('uid数据获取失败（Cookie失效/不公开信息）')
-                except Exception as e:
-                    if isinstance(e, FinishedException):
-                        raise
-                    await matcher.finish(
-                        '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                    logger.exception('数据获取失败（数据状态问题）')
-            else:
-                pass
-        else:
-            await matcher.finish('未找到绑定记录！')
-    except Exception as e:
-        if isinstance(e, FinishedException):
-            raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
-        logger.exception('查询异常')
+            await get_user_info(matcher, event, custom, args, "查询",
+                                nickname, uid[0], message, uid[1])
 
 
 # 群聊内 查询米游社通行证 的命令
@@ -1142,98 +1082,7 @@ async def send_mihoyo_bbs_info(
         args: Message = CommandArg(),
         image: ImageAndAt = Depends()
 ):
-    try:
-        message = args.extract_plain_text().strip().replace(' ', '')
-        image = image.get_first_image()
-        uid = re.findall(r'\d+', message)[0]  # str
-        m = ''.join(re.findall('[\u4e00-\u9fa5]', message))
-        if m == '深渊':
-            try:
-                if len(re.findall(r'\d+', message)) == 2:
-                    floor_num = re.findall(r'\d+', message)[1]
-                    im = await draw_abyss_pic(uid, event.sender.nickname,
-                                              floor_num, image, 3)
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                else:
-                    im = await draw_abyss0_pic(uid, event.sender.nickname,
-                                               image, 3)
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送米游社深渊信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('深渊数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('深渊数据获取失败（数据状态问题）')
-        elif m == '上期深渊':
-            try:
-                if len(re.findall(r'\d+', message)) == 1:
-                    floor_num = re.findall(r'\d+', message)[0]
-                    im = await draw_abyss_pic(uid, event.sender.nickname,
-                                              floor_num, image, 3, '2')
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-                else:
-                    im = await draw_abyss0_pic(uid, event.sender.nickname,
-                                               image, 3, '2')
-                    if im.startswith('base64://'):
-                        await matcher.finish(MessageSegment.image(im),
-                                             at_sender=True)
-                    else:
-                        await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送uid上期深渊信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('上期深渊数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('上期深渊数据获取失败（数据状态问题）')
-        else:
-            try:
-                im = await draw_pic(uid, event.sender.nickname, image, 3)
-                if im.startswith('base64://'):
-                    await matcher.finish(MessageSegment.image(im),
-                                         at_sender=True)
-                else:
-                    await matcher.finish(im, at_sender=True)
-            except ActionFailed as e:
-                await matcher.finish('机器人发送消息失败：{}'.format(e.info['wording']))
-                logger.exception('发送米游社信息失败')
-            except (TypeError, IndexError):
-                await matcher.finish('获取失败，可能是Cookies失效或者未打开米游社角色详情开关。')
-                logger.exception('米游社数据获取失败（Cookie失效/不公开信息）')
-            except Exception as e:
-                if isinstance(e, FinishedException):
-                    raise
-                await matcher.finish(
-                    '获取失败，有可能是数据状态有问题,\n{}\n请检查后台输出。'.format(e))
-                logger.exception('米游社数据获取失败（数据状态问题）')
-    except Exception as e:
-        if isinstance(e, FinishedException):
-            raise
-        await matcher.finish('发生错误 {},请检查后台输出。'.format(e))
-        logger.exception('米游社查询异常')
+    await get_user_info(matcher, event, image, args, "米游社", mode=3)
 
 
 @all_recheck.handle()
