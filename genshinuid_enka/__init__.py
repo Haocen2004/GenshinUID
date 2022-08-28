@@ -63,7 +63,30 @@ async def send_char_info(
     player_path = PLAYER_PATH / str(uid)
     if char_name == '展柜角色':
         char_file_list = player_path.glob('*')
+        char_file_count = len(list(player_path.glob('*')))
         char_list = []
+        logger.info(f'{uid} 缓存了 { char_file_count } 个角色！')
+
+        if char_file_count >= 1:
+            
+            logger.info('直接使用缓存')
+            for i in char_file_list:
+                file_name = i.name
+                if '\u4e00' <= file_name[0] <= '\u9fff':
+                    char_list.append(file_name.split('.')[0])
+            char_list_str = ','.join(char_list)
+            await matcher.finish(f'UID{uid}当前缓存角色:{char_list_str}', at_sender=True)
+        else:
+            logger.info(f'{uid} 找不到角色数据,尝试刷新')
+            try:
+                im = await enka_to_data(uid)
+                logger.info(im)
+                char_file_list = player_path.glob('*')
+            except:
+                logger.exception(f'{uid}刷新失败！')
+                logger.error(f'{uid}刷新失败！本次自动刷新结束！')
+                await matcher.finish(f'UID{uid} 获取角色数据失败！', at_sender=True)
+
         for i in char_file_list:
             file_name = i.name
             if '\u4e00' <= file_name[0] <= '\u9fff':
@@ -80,7 +103,20 @@ async def send_char_info(
             with open(char_path, 'r', encoding='utf8') as fp:
                 char_data = json.load(fp)
         else:
-            await matcher.finish(CHAR_HINT.format(char_name), at_sender=True)
+            try:
+                im = await enka_to_data(uid)
+                logger.info(im)
+                char_file_list = player_path.glob('*')
+            except:
+                logger.exception(f'{uid}刷新失败！')
+                logger.error(f'{uid}刷新失败！本次自动刷新结束！')
+                await matcher.finish(CHAR_HINT.format(char_name), at_sender=True)
+
+            if char_path.exists():
+                with open(char_path, 'r', encoding='utf8') as fp:
+                        char_data = json.load(fp)
+            else: 
+                await matcher.finish(CHAR_HINT.format(char_name), at_sender=True)
 
     im = await draw_char_img(char_data, img)
 

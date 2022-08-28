@@ -1,6 +1,6 @@
 from ..all_import import *  # noqa: F403,F401
 
-get_help = on_command('gs帮助')
+get_help = on_command('gs帮助', aliases={'帮助'})
 
 HELP_IMG = Path(__file__).parent / 'help.png'
 

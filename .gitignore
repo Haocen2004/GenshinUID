@@ -1,0 +1,13 @@
+__pycache__/
+player/
+!player/102451072/
+resource/char_namecard/
+resource/char_side/
+resource/char_stand/
+resource/chars/
+resource/gacha_img/
+resource/reliquaries/
+resource/weapon/
+genshinuid_map/map_data/
+!genshinuid_map/map_data/data.json
+genshinuid_eventlist/event.jpg
